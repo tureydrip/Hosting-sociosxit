@@ -1,0 +1,11 @@
+providers = ["node"]
+
+[phases.setup]
+nixPkgs = [
+    "...", 
+    "git", 
+    "ffmpeg", 
+    "python3", 
+    "gnumake", 
+    "gcc"
+]
