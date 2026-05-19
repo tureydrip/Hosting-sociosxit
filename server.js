@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 const activeBots = {}; // Guarda los procesos de los usuarios
 const botLogs = {};    // Guarda los logs de la consola de cada usuario
 
-// Función para guardar los logs (máximo 150 líneas para no saturar la memoria)
+// Función para guardar los logs (máximo 150 líneas)
 function addLog(userId, message) {
     if (!botLogs[userId]) botLogs[userId] = [];
     const timestamp = new Date().toLocaleTimeString('es-ES');
@@ -36,12 +36,11 @@ app.post('/api/deploy', async (req, res) => {
     try {
         if (!fs.existsSync(botsFolder)) fs.mkdirSync(botsFolder);
 
-        // Limpiar bot anterior y sus logs
         if (activeBots[userId]) {
             activeBots[userId].kill();
             delete activeBots[userId];
         }
-        botLogs[userId] = []; // Reiniciar logs
+        botLogs[userId] = [];
         addLog(userId, `Iniciando proceso de despliegue...`);
 
         if (fs.existsSync(userBotPath)) fs.rmSync(userBotPath, { recursive: true, force: true });
@@ -63,7 +62,6 @@ app.post('/api/deploy', async (req, res) => {
         const botProcess = spawn('node', [startCommand], { cwd: userBotPath });
         activeBots[userId] = botProcess;
 
-        // Capturar los logs reales del bot del cliente
         botProcess.stdout.on('data', (data) => addLog(userId, data.toString()));
         botProcess.stderr.on('data', (data) => addLog(userId, `ERROR: ${data.toString()}`));
         botProcess.on('close', (code) => addLog(userId, `Bot detenido o crasheado (Código: ${code})`));
@@ -76,7 +74,7 @@ app.post('/api/deploy', async (req, res) => {
     }
 });
 
-// NUEVO: Endpoint para leer los logs desde la web
+// ESTA ES LA RUTA QUE FALTABA
 app.get('/api/logs/:userId', (req, res) => {
     const userId = req.params.userId;
     const logs = botLogs[userId] || ["No hay logs disponibles o el bot no ha sido desplegado aún."];
@@ -88,7 +86,7 @@ app.post('/api/stop', (req, res) => {
     if (activeBots[userId]) {
         activeBots[userId].kill();
         delete activeBots[userId];
-        addLog(userId, `Bot apagado por el sistema (Plan expirado o detenido por usuario).`);
+        addLog(userId, `Bot apagado por el sistema.`);
         res.json({ success: true, message: 'Bot detenido exitosamente.' });
     } else {
         res.status(404).json({ error: 'No hay bot activo.' });
